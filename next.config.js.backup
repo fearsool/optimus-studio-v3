@@ -1,0 +1,93 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+    reactStrictMode: true,
+    swcMinify: true,
+    // distDir: '.next',
+    output: 'standalone',
+    webpack: (config, { isServer, webpack }) => {
+        // [FIX] Windows File Watcher Fix
+        config.watchOptions = {
+            poll: 1000,
+            aggregateTimeout: 300,
+        };
+
+        // 1. Handle .node binary files (for native modules)
+        config.module.rules.push({
+            test: /\.node$/,
+            loader: 'node-loader',
+        });
+
+        // 2. Client-side polyfills (resolve.fallback)
+        if (!isServer) {
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                // Core Node.js modules that are not available in the browser
+                fs: false,
+                path: false,
+                os: false,
+                net: false,
+                tls: false,
+                child_process: false,
+                crypto: false,
+                dns: false, // Critical for pg/database connection issues
+
+                // Polyfills for specific libraries
+                'better-sqlite3': false,
+                'node-windows': false,
+
+                // Disable node: protocol imports for browser
+                'node:buffer': false,
+                'node:events': false,
+                'node:fs/promises': false,
+                'node:process': false,
+                'node:path': false,
+                'node:util': false,
+                'node:url': false,
+                'node:string_decoder': false,
+                'node:stream': false,
+                'node:net': false,
+                'node:tls': false,
+                'node:http': false,
+                'node:https': false,
+                'node:zlib': false,
+                'node:crypto': false,
+            };
+
+            // Strip 'node:' prefix from imports to prevent browser errors
+            config.plugins.push(
+                new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+                    resource.request = resource.request.replace(/^node:/, "");
+                })
+            );
+        }
+
+        // 3. Externalize native modules to prevent Next.js from trying to bundle them
+        // This fixes the ERR_INVALID_ARG_TYPE crash during dev server start
+        config.externals.push({
+            'onnxruntime-node': 'commonjs onnxruntime-node',
+            'sqlite3': 'commonjs sqlite3',
+            'better-sqlite3': 'commonjs better-sqlite3',
+            'canvas': 'commonjs canvas',
+            'chromadb': 'commonjs chromadb',
+            '@tensorflow/tfjs-node': 'commonjs @tensorflow/tfjs-node',
+            'node-windows': 'commonjs node-windows',
+            'playwright': 'commonjs playwright',
+            'puppeteer': 'commonjs puppeteer',
+            'natural': 'commonjs natural',
+            'v8': 'commonjs v8',
+            'perf_hooks': 'commonjs perf_hooks',
+        });
+
+        return config;
+    },
+
+    // Ignore build errors to allow development to proceed
+    typescript: {
+        ignoreBuildErrors: true,
+    },
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+};
+
+module.exports = nextConfig;

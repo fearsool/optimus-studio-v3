@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 OPTIMUS Live Demo</title>
+    <style>
+        :root {
+            --primary: #00d4ff;
+            --danger: #ff4444;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --bg: #0a0a0f;
+            --card: #12121a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            background: var(--card);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .status-item label {
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        .status-item .value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .status-item.healthy .value {
+            color: var(--success);
+        }
+
+        .status-item.crisis .value {
+            color: var(--danger);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .console {
+            background: #000;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .console .log {
+            margin-bottom: 5px;
+        }
+
+        .console .log.info {
+            color: var(--primary);
+        }
+
+        .console .log.success {
+            color: var(--success);
+        }
+
+        .console .log.warn {
+            color: var(--warning);
+        }
+
+        .console .log.error {
+            color: var(--danger);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #1a1a24;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #fff;
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            background: linear-gradient(135deg, #00d4ff, #00aaff);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #ff4444, #ff0000);
+            color: #fff;
+        }
+
+        button.secondary {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .mode-buttons button {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            font-size: 0.85em;
+        }
+
+        .mode-buttons button.active {
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .metric {
+            background: rgba(0, 212, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .metric .label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .quick-commands {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-commands button {
+            flex: 1;
+            min-width: 120px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🤖 OPTIMUS AI</h1>
+        <p>Operations & Production Tactical Intelligence Matrix Universal System</p>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item healthy" id="statusHealth">
+            <label>Health</label>
+            <div class="value" id="healthValue">HEALTHY</div>
+        </div>
+        <div class="status-item" id="statusMode">
+            <label>Mode</label>
+            <div class="value" id="modeValue">OPERATOR</div>
+        </div>
+        <div class="status-item">
+            <label>Uptime</label>
+            <div class="value" id="uptimeValue">00:00:00</div>
+        </div>
+        <div class="status-item">
+            <label>Events</label>
+            <div class="value" id="eventCount">0</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>📡 Console</h2>
+            <div class="console" id="console">
+                <div class="log info">[OPTIMUS] Demo sayfası yüklendi</div>
+                <div class="log info">[OPTIMUS] Sistem başlatılıyor...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎮 Controls</h2>
+            <div class="controls">
+                <div class="input-group">
+                    <input type="text" id="commandInput" placeholder="Komut girin (örn: durum kontrol)" />
+                    <button onclick="sendCommand()">Gönder</button>
+                </div>
+
+                <h3 style="color: #888; font-size: 0.9em;">Hızlı Komutlar</h3>
+                <div class="quick-commands">
+                    <button class="secondary" onclick="quickCommand('durum kontrol')">📊 Durum</button>
+                    <button class="secondary" onclick="quickCommand('rapor göster')">📋 Rapor</button>
+                    <button class="secondary" onclick="quickCommand('metrik analiz')">📈 Metrik</button>
+                </div>
+
+                <h3 style="color: #888; font-size: 0.9em;">Mode</h3>
+                <div class="mode-buttons">
+                    <button class="secondary" onclick="setMode('SILENT')">🔇 Silent</button>
+                    <button class="secondary active" onclick="setMode('OPERATOR')">⚙️ Operator</button>
+                    <button class="secondary" onclick="setMode('ADVISOR')">💡 Advisor</button>
+                    <button class="secondary" onclick="setMode('ANALYST')">📊 Analyst</button>
+                    <button class="secondary" onclick="setMode('CRISIS')">🚨 Crisis</button>
+                </div>
+
+                <button class="danger" onclick="emergencyStop()">🛑 EMERGENCY STOP</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📈 Metrics</h2>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="number" id="decisionCount">0</div>
+                    <div class="label">Decisions</div>
+                </div>
+                <div class="metric">
+                    <div class="number" id="successRate">100%</div>
+                    <div class="label">Success Rate</div>
+                </div>
+                <div class="metric">
+                    <div class="number" id="avgResponse">0ms</div>
+                    <div class="label">Avg Response</div>
+                </div>
+                <div class="metric">
+                    <div class="number" id="failsafeCount">0</div>
+                    <div class="label">Failsafe Triggers</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔧 System Info</h2>
+            <div style="font-family: monospace; line-height: 1.8;">
+                <div><span style="color: #888;">Version:</span> OPTIMUS v1.0.0</div>
+                <div><span style="color: #888;">Core:</span> Event-Driven Orchestrator</div>
+                <div><span style="color: #888;">Pipeline:</span> Intent → Decision → Policy → Authority</div>
+                <div><span style="color: #888;">Fallback:</span> Rule-based Brain (Active)</div>
+                <div><span style="color: #888;">Language:</span> TR / EN</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // OPTIMUS Demo State
+        const state = {
+            mode: 'OPERATOR',
+            health: 'HEALTHY',
+            events: 0,
+            decisions: 0,
+            startTime: Date.now(),
+            successfulDecisions: 0,
+            totalResponseTime: 0,
+            failsafeCount: 0
+        };
+
+        const consoleEl = document.getElementById('console');
+
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${time}] ${message}`;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function updateUI() {
+            document.getElementById('healthValue').textContent = state.health;
+            document.getElementById('modeValue').textContent = state.mode;
+            document.getElementById('eventCount').textContent = state.events;
+            document.getElementById('decisionCount').textContent = state.decisions;
+
+            const rate = state.decisions > 0
+                ? Math.round((state.successfulDecisions / state.decisions) * 100)
+                : 100;
+            document.getElementById('successRate').textContent = rate + '%';
+
+            const avg = state.decisions > 0
+                ? Math.round(state.totalResponseTime / state.decisions)
+                : 0;
+            document.getElementById('avgResponse').textContent = avg + 'ms';
+
+            document.getElementById('failsafeCount').textContent = state.failsafeCount;
+
+            // Update health class
+            const healthEl = document.getElementById('statusHealth');
+            healthEl.className = 'status-item ' + (state.health === 'HEALTHY' ? 'healthy' : 'crisis');
+
+            // Update mode buttons
+            document.querySelectorAll('.mode-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.includes(state.mode.charAt(0))) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function simulateDecision(command) {
+            const start = Date.now();
+            state.events++;
+            state.decisions++;
+
+            // Simulate processing
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const responseTime = Date.now() - start + Math.random() * 50;
+                    state.totalResponseTime += responseTime;
+                    state.successfulDecisions++;
+                    updateUI();
+                    resolve({
+                        success: true,
+                        action: 'EXECUTE',
+                        responseTime: Math.round(responseTime)
+                    });
+                }, 100 + Math.random() * 200);
+            });
+        }
+
+        async function sendCommand() {
+            const input = document.getElementById('commandInput');
+            const command = input.value.trim();
+            if (!command) return;
+
+            input.value = '';
+            log(`> ${command}`, 'info');
+            log(`[IntentResolver] Analyzing...`, 'info');
+
+            const result = await simulateDecision(command);
+
+            log(`[Decision] Action: ${result.action} (${result.responseTime}ms)`, 'success');
+            log(`[OPTIMUS] İşlem tamamlandı.`, 'success');
+        }
+
+        function quickCommand(cmd) {
+            document.getElementById('commandInput').value = cmd;
+            sendCommand();
+        }
+
+        function setMode(mode) {
+            const oldMode = state.mode;
+            state.mode = mode;
+            state.events++;
+
+            log(`[Mode] ${oldMode} → ${mode}`, mode === 'CRISIS' ? 'error' : 'warn');
+
+            if (mode === 'CRISIS') {
+                state.health = 'CRITICAL';
+                log(`🚨 [OPTIMUS] KRİZ MODU AKTİF!`, 'error');
+            } else if (oldMode === 'CRISIS') {
+                state.health = 'HEALTHY';
+                log(`✅ [OPTIMUS] Normal moda dönüldü.`, 'success');
+            }
+
+            updateUI();
+        }
+
+        function emergencyStop() {
+            state.failsafeCount++;
+            state.mode = 'SILENT';
+            state.health = 'CRITICAL';
+            state.events++;
+
+            log(`🛑 [OPTIMUS] EMERGENCY STOP ACTIVATED!`, 'error');
+            log(`[FailSafe] System halted.`, 'error');
+            log(`[FallbackBrain] Taking over...`, 'warn');
+
+            updateUI();
+
+            // Auto-recover after 3 seconds
+            setTimeout(() => {
+                state.health = 'HEALTHY';
+                state.mode = 'OPERATOR';
+                log(`✅ [OPTIMUS] System recovered.`, 'success');
+                updateUI();
+            }, 3000);
+        }
+
+        // Uptime counter
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+            const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+            const seconds = String(elapsed % 60).padStart(2, '0');
+            document.getElementById('uptimeValue').textContent = `${hours}:${minutes}:${seconds}`;
+        }, 1000);
+
+        // Enter key handler
+        document.getElementById('commandInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendCommand();
+        });
+
+        // Initial log
+        setTimeout(() => {
+            log(`✅ [OPTIMUS] System online. Mode: ${state.mode}`, 'success');
+        }, 500);
+    </script>
+</body>
+
+</html>

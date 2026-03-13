@@ -1,0 +1,68 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.lmStudioService = void 0;
+const LM_STUDIO_URL = 'http://localhost:1234/v1';
+exports.lmStudioService = {
+    /**
+     * Check if LM Studio is running and ready
+     */
+    async isAvailable() {
+        try {
+            // Models endpoint is a lightweight check
+            const response = await fetch(`${LM_STUDIO_URL}/models`, {
+                method: 'GET',
+            });
+            return response.status === 200;
+        }
+        catch (e) {
+            return false;
+        }
+    },
+    /**
+     * Generate text completion using local model
+     */
+    async chatComplete(messages, config = {}) {
+        var _a, _b;
+        try {
+            console.log('🧠 [LM Studio] Thinking locally...');
+            const response = await fetch(`${LM_STUDIO_URL}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // CORS workaround might be needed if not enabled in LM Studio app
+                },
+                body: JSON.stringify({
+                    messages,
+                    temperature: config.temperature || 0.7,
+                    max_tokens: config.maxTokens || -1,
+                    stream: false
+                })
+            });
+            if (!response.ok) {
+                console.error('[LM Studio] Error:', response.statusText);
+                return null;
+            }
+            const data = await response.json();
+            return ((_b = (_a = data.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || null;
+        }
+        catch (error) {
+            console.error('[LM Studio] Connection failed. Make sure server is running.', error);
+            return null;
+        }
+    },
+    /**
+     * Specialized Optimus Processor
+     * Converts Optimus Intents into LM Studio prompts
+     */
+    async processOptimusTask(task, context) {
+        const systemPrompt = `You are OPTIMUS, an advanced autonomous factory operating system.
+Current Context: ${context}
+Style: Professional, efficient, analytical.
+Task: Execute the user command or answer the question.`;
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: task }
+        ];
+        return this.chatComplete(messages);
+    }
+};

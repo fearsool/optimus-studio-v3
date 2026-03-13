@@ -1,0 +1,30 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noEmit": false,
+        "outDir": "./dist",
+        "target": "es2020",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "strict": false
+    },
+    "include": [
+        "src/index.ts",
+        "src/core/**/*.ts",
+        "src/agent/**/*.ts",
+        "src/factory/**/*.ts",
+        "src/app/core/**/*.ts",
+        "scripts/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.tsx",
+        "src/pages",
+        "src/app/ui",
+        "src/app/layout.tsx",
+        "src/app/page.tsx"
+    ]
+}

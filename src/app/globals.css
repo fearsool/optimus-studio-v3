@@ -1,0 +1,369 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Background layers */
+  --bg-deep:    #060a0f;
+  --bg-base:    #0a0e14;
+  --bg-surface: #0d1117;
+  --bg-raised:  #131920;
+  --bg-elevated:#161d27;
+  --bg-overlay: #1c2432;
+
+  /* Borders */
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-normal: rgba(255,255,255,0.1);
+  --border-strong: rgba(255,255,255,0.18);
+
+  /* Accent - Emerald/Teal (matches screenshot nodes) */
+  --accent-green:   #2bca8d;
+  --accent-green-2: #10b981;
+  --accent-glow:    rgba(43, 202, 141, 0.15);
+
+  /* Text */
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #4a5568;
+
+  --foreground: #e6edf3;
+  --background: #0a0e14;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 13px;
+}
+
+/* ==========================================
+   CUSTOM SCROLLBAR
+   ========================================== */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.22);
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+/* ==========================================
+   WORKFLOW CANVAS GRID
+   ========================================== */
+.grid-canvas {
+  background-color: var(--bg-surface);
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.grid-pattern {
+  background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ==========================================
+   WORKFLOW NODES
+   ========================================== */
+.wf-node {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-normal);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+  cursor: grab;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wf-node:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+}
+
+.wf-node.selected {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 1px var(--accent-green), 0 6px 24px var(--accent-glow);
+}
+
+.wf-node-trigger {
+  background: linear-gradient(135deg, #162a28 0%, #0f2825 100%);
+  border-color: rgba(43, 202, 141, 0.3);
+}
+
+.wf-node-ai {
+  background: var(--bg-elevated);
+  border-color: rgba(43, 202, 141, 0.25);
+}
+
+.wf-node-process {
+  background: linear-gradient(135deg, #161d30 0%, #111827 100%);
+  border-color: rgba(99, 120, 230, 0.25);
+}
+
+.wf-node-output {
+  background: linear-gradient(135deg, #1a1628 0%, #130f20 100%);
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+/* ==========================================
+   CONNECTIONS
+   ========================================== */
+.wf-connection {
+  stroke: rgba(43, 202, 141, 0.5);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 4 4;
+  animation: dashMove 1s linear infinite;
+}
+
+@keyframes dashMove {
+  to { stroke-dashoffset: -8; }
+}
+
+/* ==========================================
+   LEFT SIDEBAR TREE
+   ========================================== */
+.sidebar-section {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 8px 12px 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 0 4px;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+}
+.sidebar-item:hover {
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+}
+.sidebar-item.active {
+  background: rgba(43, 202, 141, 0.1);
+  color: var(--accent-green);
+  border-left: 2px solid var(--accent-green);
+  padding-left: 10px;
+}
+
+.sidebar-child {
+  padding-left: 28px;
+}
+
+/* ==========================================
+   ACCORDION SECTIONS (Right Panel)
+   ========================================== */
+.accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+.accordion-header:hover {
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+/* ==========================================
+   BUTTONS
+   ========================================== */
+.btn-run {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+.btn-run:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-run:active { transform: translateY(0); }
+
+.btn-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid var(--border-normal);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.btn-actions:hover {
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.icon-btn:hover {
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+/* ==========================================
+   FORM ELEMENTS
+   ========================================== */
+.prop-input {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-normal);
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.prop-input:focus {
+  border-color: var(--accent-green);
+}
+
+.prop-select {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-normal);
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+/* ==========================================
+   TOP BAR BREADCRUMB
+   ========================================== */
+.breadcrumb-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: border-color 0.1s;
+}
+.breadcrumb-btn:hover {
+  border-color: var(--border-normal);
+}
+
+/* ==========================================
+   FADE/PULSE ANIMATIONS
+   ========================================== */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink { animation: blink 1s step-end infinite; }
+
+/* ==========================================
+   MONACO EDITOR / CODE EDITOR
+   ========================================== */
+.monaco-editor-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* ==========================================
+   WORKFLOW TAB BAR
+   ========================================== */
+.wf-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 36px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.1s, border-color 0.1s;
+  user-select: none;
+}
+.wf-tab:hover { color: var(--text-primary); }
+.wf-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-green);
+}

@@ -1,0 +1,19 @@
+# Local Netlify folder
+.netlify
+node_modules
+.next
+.env
+*.log
+*.txt
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!next.config.js
+!tailwind.config.ts
+!postcss.config.js
+dist
+build
+sqlite
+.immune_system_backups
+.DS_Store

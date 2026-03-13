@@ -1,0 +1,166 @@
+/**
+ * CANARY EXECUTION SERVICE
+ * =========================
+ * Read-only demo execution for buyers
+ * - No real API calls
+ * - Mock outputs
+ * - SLA demonstration
+ */
+
+import { SystemBlueprint, CanaryConfig, SLAManifest, checkSLABreach, SLACheckResult } from '../types';
+
+export interface CanaryResult {
+    success: boolean;
+    steps: CanaryStepResult[];
+    totalDuration: number;
+    slaCheck: SLACheckResult;
+    demoOutput: any;
+}
+
+export interface CanaryStepResult {
+    nodeId: string;
+    nodeTitle: string;
+    status: 'simulated' | 'skipped';
+    duration: number;
+    mockOutput?: any;
+}
+
+class CanaryExecutionService {
+    /**
+     * Run canary (demo) execution
+     * No real API calls, just simulation
+     */
+    async runCanary(
+        blueprint: SystemBlueprint,
+        canaryConfig: CanaryConfig,
+        sla: SLAManifest
+    ): Promise<CanaryResult> {
+        console.log('[Canary] Starting demo execution:', blueprint.name);
+
+        const steps: CanaryStepResult[] = [];
+        let totalDuration = 0;
+        const startTime = Date.now();
+
+        for (const node of blueprint.nodes) {
+            const isSimulated = canaryConfig.simulatedNodes.includes(node.id);
+
+            // Simulate processing time
+            const stepDuration = isSimulated
+                ? Math.random() * 500 + 200  // 200-700ms
+                : 50; // Quick skip
+
+            await this.delay(stepDuration);
+            totalDuration += stepDuration;
+
+            steps.push({
+                nodeId: node.id,
+                nodeTitle: node.title,
+                status: isSimulated ? 'simulated' : 'skipped',
+                duration: stepDuration,
+                mockOutput: isSimulated ? this.generateMockOutput(node.type) : undefined
+            });
+
+            console.log(`[Canary] ${isSimulated ? '✓' : '○'} ${node.title} (${stepDuration.toFixed(0)}ms)`);
+        }
+
+        const actualDuration = Date.now() - startTime;
+
+        // Check SLA with demo data
+        const slaCheck = checkSLABreach(actualDuration, sla, canaryConfig.demoDuration);
+
+        console.log(`[Canary] Complete: ${actualDuration}ms, SLA: ${slaCheck.status}`);
+
+        return {
+            success: true,
+            steps,
+            totalDuration: actualDuration,
+            slaCheck,
+            demoOutput: canaryConfig.mockOutput
+        };
+    }
+
+    /**
+     * Generate default canary config for a blueprint
+     */
+    generateDefaultCanaryConfig(blueprint: SystemBlueprint): CanaryConfig {
+        // Simulate first 3 nodes only
+        const simulatedNodes = blueprint.nodes
+            .slice(0, 3)
+            .map(n => n.id);
+
+        return {
+            enabled: true,
+            demoInput: {
+                _demo: true,
+                message: "Demo input - no real data processed",
+                timestamp: new Date().toISOString()
+            },
+            mockOutput: {
+                _demo: true,
+                result: "Demo output - this is what your automation produces",
+                status: "success",
+                timestamp: new Date().toISOString()
+            },
+            simulatedNodes,
+            demoDuration: 3000, // 3 seconds
+            showDemoBadge: true
+        };
+    }
+
+    /**
+     * Generate default SLA for a blueprint
+     */
+    generateDefaultSLA(blueprint: SystemBlueprint, avgExecutionTime: number = 5000): SLAManifest {
+        const nodeCount = blueprint.nodes.length;
+        const hasExternalAPIs = (blueprint.requiredApis?.length || 0) > 0;
+
+        // Calculate expected failure rate based on complexity
+        const expectedFailureRate = hasExternalAPIs
+            ? Math.min(5 + nodeCount * 0.5, 15) // 5-15% for API-heavy
+            : Math.min(1 + nodeCount * 0.2, 5);  // 1-5% for simple
+
+        return {
+            maxLatency: avgExecutionTime * 3, // 3x avg as max
+            expectedFailureRate,
+            refundCondition: {
+                onTotalFailure: true,
+                onSLABreach: false, // Only warning, not refund
+                windowDays: 14,
+                maxRefundsPerCustomer: 1,
+                exceptions: [
+                    "API key expired or invalid",
+                    "Rate limit exceeded by user's own usage",
+                    "External service outage (verified)",
+                    "User modified template after purchase"
+                ]
+            },
+            maxRetries: 3,
+            uptimeGuarantee: "95%",
+            supportResponseTime: "48h",
+            customerLogLevel: 'summary' // Don't expose debug info
+        };
+    }
+
+    /**
+     * Generate mock output based on node type
+     */
+    private generateMockOutput(nodeType: string): any {
+        const mockOutputs: Record<string, any> = {
+            planner: { plan: ["Step 1: Analyze input", "Step 2: Generate content", "Step 3: Format output"] },
+            creator: { content: "Demo content generated by AI...", wordCount: 150 },
+            analyst: { sentiment: 0.85, keywords: ["demo", "automation", "AI"] },
+            media: { imageUrl: "https://via.placeholder.com/512x512?text=Demo+Image" },
+            social: { postId: "demo_12345", status: "scheduled" },
+            webhook: { response: { status: 200, body: "OK" } }
+        };
+
+        return mockOutputs[nodeType] || { status: "simulated" };
+    }
+
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}
+
+export const canaryExecutionService = new CanaryExecutionService();
+export default canaryExecutionService;
