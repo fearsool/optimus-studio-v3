@@ -69,11 +69,13 @@ export default function OptimusStudio() {
         body: JSON.stringify({ text })
       });
       if (jarvisRes.ok) {
-        // Jarvis handles speech smoothly in background
-        setTimeout(() => {
-          setAgentState(prev => ({ ...prev, status: 'idle' }));
-        }, Math.min(Math.max(text.length * 60, 2000), 10000));
-        return;
+        const data = await jarvisRes.json().catch(() => ({}));
+        if (data.ok) {
+          setTimeout(() => {
+            setAgentState(prev => ({ ...prev, status: 'idle' }));
+          }, Math.min(Math.max(text.length * 60, 2000), 10000));
+          return;
+        }
       }
     } catch {
       // Jarvis offline, proceed to fallback
