@@ -12,6 +12,8 @@ import { TerminalTool } from './TerminalTool';
 import { BrowserTool } from './BrowserTool';
 import { connectorTools } from './ConnectorTools';
 import { WebSearchTool } from './WebSearchTool';
+import { performanceOptimizationTool } from './performanceOptimizationTool';
+import { SokratesTool } from './SokratesTool';
 
 export class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
@@ -21,6 +23,8 @@ export class ToolRegistry {
         this.register(new FileTool(workspaceDir));
         this.register(new TerminalTool(workspaceDir));
         this.register(new BrowserTool());
+        this.register(new SokratesTool());
+        this.register(new performanceOptimizationTool());
 
         // Connector Tools (GitHub, Supabase, Netlify)
         // 🛡️ OFFLINE-FIRST POLICY: Disabled by default for stability
