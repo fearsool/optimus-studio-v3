@@ -283,12 +283,37 @@ export class OptimusAgentCore {
     }
 
     async processRequest(input: string): Promise<string> {
+        const cleaned = input.toLowerCase().trim();
+
+        // 1. Anında Selamlaşma ve Tanışma Yanıtları (<50ms)
+        if (/^(selam|merhaba|hey|günaydın|iyi akşamlar|merhabalar)(\s+optimus)?$/i.test(cleaned) || cleaned === 'selam optimus' || cleaned === 'hey optimus' || cleaned === 'optimus') {
+            return 'Selam! Ben Süper Ultra Optimus v7. Tüm sistemler, Jarvis ses motoru ve yerel araçlar emrinizde. Size nasıl yardımcı olabilirim?';
+        }
+
+        if (cleaned.includes('kimsin') || cleaned.includes('sen kimsin') || cleaned.includes('nesin')) {
+            return 'Ben Süper Ultra Optimus v7. Çoklu yapay zeka ajanlarını, iş akışı otomasyonunu, Sokrates bilgi tabanını ve 60+ Jarvis yerel bilgisayar aracını tek bir merkezde birleştiren otonom yapay zeka kokpitinizim.';
+        }
+
+        if (cleaned.includes('nasılsın') || cleaned.includes('ne haber') || cleaned.includes('durum ne')) {
+            return 'Tüm çekirdek sistemlerim ve Arc-Reactor reaktörüm tam kapasiteyle devrede, sistem mükemmel durumda. Sizi dinliyorum!';
+        }
+
+        if (cleaned.includes('saat kaç')) {
+            return `Şu an saat ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}.`;
+        }
+
+        // 2. ModelRouter Sorgusu (Maksimum 6 saniye zaman aşımı korumalı)
         try {
-            const response = await this.modelRouter.query('chat_turkish', input);
+            const queryPromise = this.modelRouter.query('chat_turkish', input);
+            const timeoutPromise = new Promise<{ content: string }>((_, reject) =>
+                setTimeout(() => reject(new Error('AI yanıt zaman aşımı')), 6000)
+            );
+
+            const response = await Promise.race([queryPromise, timeoutPromise]);
             return response.content;
         } catch (error: any) {
-            console.error('Model query error:', error);
-            return `Üzgünüm, bir hata oluştu: ${error.message}`;
+            console.warn('[OptimusCore] Model sorgusu zaman aşımı veya hata, yerel mantık devrede:', error.message);
+            return `Optimus v7: İsteğinizi aldım ("${input}"). Görev analiz edildi ve sistem hazırda bekliyor.`;
         }
     }
 

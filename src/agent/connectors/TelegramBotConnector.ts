@@ -46,8 +46,8 @@ export class TelegramBotConnector {
     // ============ INIT ============
 
     async initialize(): Promise<boolean> {
-        if (!this.config.token) {
-            console.warn('[Telegram] ⚠️  TELEGRAM_BOT_TOKEN not set. Telegram bot disabled.');
+        if (!this.config.token || this.config.token.length < 25 || this.config.token.includes('YOUR_') || this.config.token === 'test_token') {
+            console.warn('[Telegram] ⚠️  TELEGRAM_BOT_TOKEN geçersiz veya ayarlanmamış. Telegram botu devre dışı.');
             return false;
         }
 
@@ -57,6 +57,12 @@ export class TelegramBotConnector {
 
         try {
             this.bot = new TelegramBot(this.config.token, { polling: true });
+
+            // Polling hatası durumunda döngüye girmeden durdur
+            this.bot.on('polling_error', (err: any) => {
+                console.warn('[Telegram] ⚠️  Telegram bağlantı/yetki hatası (token geçersiz olabilir). Polling durduruluyor...');
+                this.bot?.stopPolling().catch(() => {});
+            });
 
             this.registerCommands();
             this.setupAgentEventListeners();
