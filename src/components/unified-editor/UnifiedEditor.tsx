@@ -17,6 +17,7 @@ import { ChatPanel } from '../../app/ui/panels/ChatPanel';
 import { WorkflowDesigner } from '../workflow/WorkflowDesigner';
 import PersonalAgentDashboard from '../../app/ui/panels/PersonalAgentDashboard';
 import { TemplateStore, AutomationTemplate } from '../templates/TemplateStore';
+import { OptimusCockpit } from '../hud/OptimusCockpit';
 import { Upload, Bot } from 'lucide-react';
 
 interface UnifiedEditorProps {
@@ -27,7 +28,7 @@ interface UnifiedEditorProps {
     messages: any[];
     input: string;
     setInput: React.Dispatch<React.SetStateAction<string>>;
-    sendMessage: () => void;
+    sendMessage: (customText?: string) => void;
     startListening: () => void;
     isLoading: boolean;
     agentState: any;
@@ -48,13 +49,13 @@ export default function UnifiedEditor({
     agentState
 }: UnifiedEditorProps) {
     // Layout State
-    const [showLeft, setShowLeft] = useState(true);
-    const [showRight, setShowRight] = useState(true);
-    const [showBottom, setShowBottom] = useState(true);
+    const [showLeft, setShowLeft] = useState(false);
+    const [showRight, setShowRight] = useState(false);
+    const [showBottom, setShowBottom] = useState(false);
 
     // Workspace State
-    const [activeTabId, setActiveTabId] = useState('page.tsx');
-    const [activeMode, setActiveMode] = useState<'code' | 'workflow' | 'preview' | 'personal_agent' | 'dashboard' | 'factory' | 'editor' | 'templates' | 'chat'>('workflow');
+    const [activeTabId, setActiveTabId] = useState('cockpit');
+    const [activeMode, setActiveMode] = useState<'cockpit' | 'code' | 'workflow' | 'preview' | 'personal_agent' | 'dashboard' | 'factory' | 'editor' | 'templates' | 'chat'>('cockpit');
     const [dragActive, setDragActive] = useState(false);
     const [pendingTemplate, setPendingTemplate] = useState<AutomationTemplate | null>(null);
 
@@ -203,6 +204,21 @@ export default function UnifiedEditor({
                                 <Upload size={20} />
                                 <span className="font-bold">Drop files to upload</span>
                             </div>
+                        </div>
+                    )}
+
+                    {activeMode === 'cockpit' && (
+                        <div className="h-full w-full">
+                            <OptimusCockpit
+                                messages={messages}
+                                input={input}
+                                setInput={setInput}
+                                sendMessage={sendMessage}
+                                startListening={startListening}
+                                isLoading={isLoading}
+                                agentState={agentState}
+                                onSwitchMode={(mode) => setActiveMode(mode as any)}
+                            />
                         </div>
                     )}
 

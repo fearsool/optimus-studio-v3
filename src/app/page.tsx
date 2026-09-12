@@ -56,27 +56,95 @@ export default function OptimusStudio() {
     }));
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMsg = input.trim();
-    setMessages(prev => [...prev, { id: Date.now(), role: 'user', content: userMsg, timestamp: new Date() }]);
+  // Speaks text using Jarvis Edge-TTS or browser SpeechSynthesis
+  const speakReply = async (text: string) => {
+    if (!text || typeof window === 'undefined') return;
+    setAgentState(prev => ({ ...prev, status: 'speaking' }));
+    
+    // Try Jarvis backend first
+    try {
+      const jarvisRes = await fetch('/api/jarvis/api/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (jarvisRes.ok) {
+        // Jarvis handles speech smoothly in background
+        setTimeout(() => {
+          setAgentState(prev => ({ ...prev, status: 'idle' }));
+        }, Math.min(Math.max(text.length * 60, 2000), 10000));
+        return;
+      }
+    } catch {
+      // Jarvis offline, proceed to fallback
+    }
+
+    // Fallback: Browser Web Speech API
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'tr-TR';
+      utterance.rate = 1.05;
+      utterance.onend = () => {
+        setAgentState(prev => ({ ...prev, status: 'idle' }));
+      };
+      utterance.onerror = () => {
+        setAgentState(prev => ({ ...prev, status: 'idle' }));
+      };
+      window.speechSynthesis.speak(utterance);
+    } else {
+      setAgentState(prev => ({ ...prev, status: 'idle' }));
+    }
+  };
+
+  const sendMessage = async (customText?: string) => {
+    const textToSend = (customText !== undefined ? customText : input).trim();
+    if (!textToSend || isLoading) return;
+    
+    setMessages(prev => [...prev, { id: Date.now(), role: 'user', content: textToSend, timestamp: new Date() }]);
     setInput('');
     setIsLoading(true);
     setAgentState(prev => ({ ...prev, status: 'thinking' }));
 
     try {
-      const res = await fetch('/api/agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, history: messages })
-      });
-      const data = await res.json();
-      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: data.response || 'No response', timestamp: new Date() }]);
-      setAgentState(prev => ({ ...prev, status: 'idle' }));
-      if (data.plan) setAgentState(prev => ({ ...prev, currentPlan: data.plan }));
+      // First check if it's a direct PC control command for Jarvis
+      let responseText = '';
+      try {
+        const jarvisCommandRes = await fetch('/api/jarvis/api/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: textToSend })
+        });
+        if (jarvisCommandRes.ok) {
+          const jarvisData = await jarvisCommandRes.json();
+          if (jarvisData.reply) {
+            responseText = jarvisData.reply;
+          }
+        }
+      } catch {
+        // Jarvis offline
+      }
+
+      // If Jarvis didn't respond directly, route through Optimus Agent
+      if (!responseText) {
+        const res = await fetch('/api/agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: textToSend, history: messages })
+        });
+        const data = await res.json();
+        responseText = data.response || 'Anlaşıldı komutanım.';
+        if (data.plan) setAgentState(prev => ({ ...prev, currentPlan: data.plan }));
+      }
+
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: responseText, timestamp: new Date() }]);
+      
+      // Voice reply trigger
+      await speakReply(responseText);
+
     } catch (e) {
       console.error(e);
-      addLog('error', 'Failed to send message');
+      addLog('error', 'Mesaj gönderilemedi.');
       setAgentState(prev => ({ ...prev, status: 'error' }));
     } finally {
       setIsLoading(false);
@@ -87,26 +155,55 @@ export default function OptimusStudio() {
     if (typeof window === 'undefined') return;
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Browser does not support Speech API');
+      alert('Tarayıcınız ses tanıma API\'sini desteklemiyor. Lütfen Chrome, Edge veya uyumlu bir tarayıcı kullanın.');
       return;
     }
+
+    if (agentState.status === 'listening') {
+      setAgentState(prev => ({ ...prev, status: 'idle' }));
+      return;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.lang = 'tr-TR';
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onstart = () => {
-      addLog('info', 'Listening...');
+      setAgentState(prev => ({ ...prev, status: 'listening' }));
+      addLog('info', 'Sizi dinliyorum...');
     };
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      setInput(`[VOICE] ${transcript}`);
+      setInput(transcript);
+      addLog('info', `Ses algılandı: "${transcript}"`);
+      sendMessage(transcript);
     };
+
+    recognition.onend = () => {
+      setAgentState(prev => (prev.status === 'listening' ? { ...prev, status: 'idle' } : prev));
+    };
+
     recognition.onerror = (event: any) => {
-      if (event.error !== 'no-speech') console.error(event.error);
+      if (event.error === 'no-speech' || event.error === 'aborted') {
+        setAgentState(prev => ({ ...prev, status: 'idle' }));
+        return;
+      }
+      if (event.error === 'not-allowed') {
+        addLog('error', 'Mikrofon izni verilmedi. Lütfen tarayıcı izinlerini kontrol edin.');
+        setAgentState(prev => ({ ...prev, status: 'idle' }));
+        return;
+      }
+      addLog('warning', `Ses tanıma: ${event.error}`);
+      setAgentState(prev => ({ ...prev, status: 'idle' }));
     };
-    recognition.start();
+
+    try {
+      recognition.start();
+    } catch {
+      setAgentState(prev => ({ ...prev, status: 'idle' }));
+    }
   };
 
   const handleFixProblem = (problem: any) => {

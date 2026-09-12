@@ -62,30 +62,33 @@ export const TopBar = ({
     ];
 
     const modeItems = [
-        { id: 'dashboard', label: 'Kontrol Paneli' },
-        { id: 'workflow', label: 'İş Akışı Editörü' },
-        { id: 'editor', label: 'Kod Editörü' },
-        { id: 'factory', label: 'Fabrika' },
-        { id: 'personal_agent', label: 'Kişisel Ajan' },
+        { id: 'cockpit', label: '🚀 Kokpit HUD (v7)' },
+        { id: 'workflow', label: '⚡ İş Akışı Editörü' },
+        { id: 'editor', label: '💻 Kod Stüdyosu' },
+        { id: 'personal_agent', label: '🤖 Kişisel Ajan Filosu' },
+        { id: 'templates', label: '🏭 Fabrika & Şablonlar' },
+        { id: 'dashboard', label: '📊 Kontrol Paneli' },
     ];
 
     return (
         <div className="h-11 flex items-center justify-between px-3 select-none flex-shrink-0"
-            style={{ background: 'var(--bg-raised)', borderBottom: '1px solid var(--border-subtle)' }}>
+            style={{ background: '#070d18', borderBottom: '1px solid rgba(6, 182, 212, 0.2)' }}>
 
             {/* ── SOL: Logo + toggle ───────────────────────── */}
             <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg,#059669,#0d9488)' }}>
-                        <Zap size={14} className="text-white" />
+                <div className="flex items-center gap-2 cursor-pointer" onClick={() => onModeChange('cockpit')}>
+                    <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 shadow-md shadow-cyan-500/20"
+                        style={{ background: 'linear-gradient(135deg,#06b6d4,#3b82f6)' }}>
+                        <Zap size={14} className="text-white animate-pulse" />
                     </div>
-                    <span className="font-semibold text-xs tracking-widest" style={{ color: 'var(--text-primary)', letterSpacing: '0.12em' }}>
-                        ALİ Erden
-                    </span>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-xs tracking-widest text-cyan-400 font-mono" style={{ letterSpacing: '0.14em' }}>
+                            OPTIMUS <span className="text-white text-[10px] px-1 py-0.2 bg-cyan-900/60 rounded border border-cyan-500/40">v7</span>
+                        </span>
+                    </div>
                 </div>
 
-                <div className="w-px h-5" style={{ background: 'var(--border-subtle)' }} />
+                <div className="w-px h-5" style={{ background: 'rgba(255,255,255,0.1)' }} />
 
                 <div className="flex items-center gap-0.5">
                     <Tip text="Sol Paneli Aç/Kapat">
@@ -106,34 +109,27 @@ export const TopBar = ({
                 </div>
             </div>
 
-            {/* ── ORTA: Breadcrumb ─────────────────────────── */}
-            <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
-                <div className="relative" ref={projectRef}>
-                    <button className="breadcrumb-btn" onClick={() => setProjectDropOpen(p => !p)}
-                        style={{ fontSize: '12px', color: 'var(--text-secondary)' }}
-                        title="Modu değiştir">
-                        {modeItems.find(m => m.id === activeMode)?.label || 'Editör'}
-                        <ChevronDown size={12} style={{ marginLeft: 2 }} />
+            {/* ── ORTA: Hızlı Mod Geçiş Butonları ──────────── */}
+            <div className="flex items-center gap-1">
+                {[
+                    { id: 'cockpit', label: '🚀 Kokpit' },
+                    { id: 'workflow', label: '⚡ İş Akışı' },
+                    { id: 'personal_agent', label: '🤖 Ajanlar' },
+                    { id: 'editor', label: '💻 Kod' },
+                    { id: 'templates', label: '🏭 Şablonlar' },
+                ].map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => onModeChange(item.id)}
+                        className={`px-3 py-1 text-xs font-mono rounded-md transition-all ${
+                            activeMode === item.id
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-xs'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        {item.label}
                     </button>
-                    {projectDropOpen && (
-                        <div className="absolute top-full left-0 mt-1 z-50 w-44 rounded-lg overflow-hidden shadow-2xl py-1"
-                            style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-normal)' }}>
-                            {modeItems.map(item => (
-                                <div key={item.id}
-                                    className="px-3 py-2 text-xs cursor-pointer transition-colors"
-                                    style={{ color: activeMode === item.id ? 'var(--accent-green)' : 'var(--text-secondary)' }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                    onClick={() => { onModeChange(item.id); setProjectDropOpen(false); }}
-                                >
-                                    {item.label}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <ChevronRight size={13} style={{ color: 'var(--border-normal)' }} />
-                <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{projectName}</span>
+                ))}
             </div>
 
             {/* ── SAĞ: Çalıştır + Eylemler + İkonlar ──────── */}

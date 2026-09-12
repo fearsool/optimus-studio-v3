@@ -1,6 +1,6 @@
 
 export type AgentState = {
-    status: 'idle' | 'thinking' | 'executing' | 'error';
+    status: 'idle' | 'thinking' | 'executing' | 'error' | 'listening' | 'speaking';
     currentPlan: Plan | null;
     currentStep: number;
     activeTool: string | null;
