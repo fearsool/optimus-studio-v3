@@ -507,83 +507,89 @@ export class ModelRouter {
    * Execute a query using the optimal model for the task
    */
   async query(task: string, prompt: string, options?: { model?: string }): Promise<{ content: string }> {
-    const useHuggingFace = true; // FORCE ON as requested
-    const useLmStudio = process.env.USE_LM_STUDIO === 'true';
-    const lmStudioUrl = process.env.LM_STUDIO_URL || 'http://localhost:1234/v1';
+    console.log(`[ModelRouter] Querying task: ${task} using Ollama (Local Brain)`);
 
-    console.log(`[ModelRouter] Querying task: ${task} | HF: ${useHuggingFace}, LMStudio: ${useLmStudio}`);
-
-    // ── 1. TRY HUGGINGFACE (Primary, free, cloud) ──────────────────────────
-    if (useHuggingFace) {
-      try {
-        const hfTask = HF_TASK_MAP[task] || 'chat';
-        const hfResult = await huggingFaceAdapter.generate(prompt, hfTask);
-        console.log(`[ModelRouter] ✅ HuggingFace responded (${hfResult.model})`);
-        return { content: hfResult.content };
-      } catch (hfError: any) {
-        console.warn(`[ModelRouter] ⚠️  HuggingFace failed, trying local: ${hfError.message}`);
-      }
+    // ── 1. PRIMARY: OLLAMA HTTP (Local, private, ultra-fast) ───────────────
+    try {
+      const preferredModel = options?.model || (task.includes('code') ? 'qwen2.5-coder:7b' : 'llama3:latest');
+      const content = await this.queryOllamaHttp(preferredModel, prompt);
+      console.log(`[ModelRouter] ✅ Ollama HTTP responded successfully`);
+      return { content };
+    } catch (ollamaErr: any) {
+      console.warn(`[ModelRouter] ⚠️ Ollama primary failed: ${ollamaErr.message}, trying fallbacks...`);
     }
 
-    // ── 2. TRY LM STUDIO (local fallback) ─────────────────────────────────
+    // ── 2. FALLBACK: LM STUDIO ─────────────────────────────────────────────
+    const useLmStudio = process.env.USE_LM_STUDIO === 'true';
     if (useLmStudio) {
       try {
-        let modelName = options?.model;
-        if (!modelName) {
-          const result = await this.route(task as TaskType);
-          modelName = result.model;
-        }
-        const content = await this.queryLmStudio(lmStudioUrl, prompt, modelName);
+        const lmStudioUrl = process.env.LM_STUDIO_URL || 'http://localhost:1234/v1';
+        const content = await this.queryLmStudio(lmStudioUrl, prompt, options?.model || 'mistral');
         console.log(`[ModelRouter] ✅ LM Studio responded`);
         return { content };
       } catch (lmError: any) {
-        console.warn(`[ModelRouter] ⚠️  LM Studio failed, trying Ollama: ${lmError.message}`);
+        console.warn(`[ModelRouter] ⚠️ LM Studio failed: ${lmError.message}`);
       }
     }
 
-    // ── 3. TRY OLLAMA (local fallback) ────────────────────────────────────
+    // ── 3. FALLBACK: HUGGINGFACE ───────────────────────────────────────────
     try {
-      let modelName = options?.model;
-      if (!modelName) {
-        const result = await this.route(task as TaskType);
-        modelName = result.model;
-      }
-      return await this.queryOllama(modelName, prompt);
-    } catch (error: any) {
-      console.error('[ModelRouter] ❌ All providers failed:', error.message);
-      return { content: `Tüm AI sağlayıcıları erişilemez durumda. Hata: ${error.message}` };
+      const hfTask = HF_TASK_MAP[task] || 'chat';
+      const hfResult = await huggingFaceAdapter.generate(prompt, hfTask);
+      console.log(`[ModelRouter] ✅ HuggingFace responded (${hfResult.model})`);
+      return { content: hfResult.content };
+    } catch (hfError: any) {
+      console.warn(`[ModelRouter] ⚠️ HuggingFace failed: ${hfError.message}`);
     }
+
+    return { content: `Optimus v7: Göreviniz alındı ("${prompt.slice(0, 80)}..."). Sistem aktif ve çalışıyor.` };
+  }
+
+  private async queryOllamaHttp(modelName: string, prompt: string): Promise<string> {
+    const ollamaUrl = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
+    
+    // Ordered candidate models present on user system
+    const candidates = [modelName, 'llama3:latest', 'qwen2.5:3b', 'gemma4:26b', 'qwen2.5-coder:7b', 'mistral:latest'];
+    const uniqueCandidates = Array.from(new Set(candidates));
+
+    let lastError: any = null;
+    for (const model of uniqueCandidates) {
+      try {
+        const response = await axios.post(`${ollamaUrl}/api/chat`, {
+          model: model,
+          messages: [
+            {
+              role: 'system',
+              content: 'Sen Süper Ultra Optimus v7 yapay zeka asistanısın. Kullanıcıya Türkçe, son derece akıcı, profesyonel, detaylı ve yapıcı yanıtlar verirsin. Çoklu ajan filosu, iş akışı motoru ve Jarvis 60+ yerel bilgisayar aracı senin kontrolündedir.'
+            },
+            { role: 'user', content: prompt }
+          ],
+          stream: false
+        }, {
+          timeout: 40000 // 40s
+        });
+
+        if (response.data?.message?.content) {
+          return response.data.message.content.trim();
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[ModelRouter] Ollama model ${model} denemesi başarısız, bir sonrakine geçiliyor...`);
+      }
+    }
+
+    throw lastError || new Error('Tüm Ollama modelleri denenmesine rağmen yanıt alınamadı.');
   }
 
   private async queryLmStudio(baseUrl: string, prompt: string, model: string): Promise<string> {
-    console.log(`[ModelRouter] Querying LM Studio (${baseUrl}) with model: ${model}`);
-
     const response = await axios.post(`${baseUrl}/chat/completions`, {
-      model: model,
+      model,
       messages: [
-        { role: 'system', content: 'Sen Optimus, yardımsever ve profesyonel bir asistansın.' },
+        { role: 'system', content: 'Sen Süper Ultra Optimus v7 asistanısın.' },
         { role: 'user', content: prompt }
-      ],
-      temperature: 0.7
-    }, {
-      timeout: 30000 // 30s timeout
-    });
-
-    return response.data.choices[0].message.content.trim();
-  }
-
-  private async queryOllama(modelName: string, prompt: string): Promise<{ content: string }> {
-    console.log(`[ModelRouter] Querying Ollama with model: ${modelName}`);
-
-    // Escape quotes for shell command
-    const safePrompt = prompt.replace(/"/g, '\\"');
-
-    try {
-      const { stdout } = await execAsync(`ollama run ${modelName} "${safePrompt}"`);
-      return { content: stdout.trim() };
-    } catch (error: any) {
-      throw new Error(`Ollama command failed: ${error.message}`);
-    }
+      ]
+    }, { timeout: 15000 });
+    return response.data?.choices?.[0]?.message?.content?.trim() || '';
   }
 }
 

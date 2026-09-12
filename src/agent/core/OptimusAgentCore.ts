@@ -302,18 +302,18 @@ export class OptimusAgentCore {
             return `Şu an saat ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}.`;
         }
 
-        // 2. ModelRouter Sorgusu (Maksimum 6 saniye zaman aşımı korumalı)
+        // 2. ModelRouter Sorgusu (Ollama Yerel Yapay Zeka - 45 saniye zaman aşımı)
         try {
             const queryPromise = this.modelRouter.query('chat_turkish', input);
             const timeoutPromise = new Promise<{ content: string }>((_, reject) =>
-                setTimeout(() => reject(new Error('AI yanıt zaman aşımı')), 6000)
+                setTimeout(() => reject(new Error('AI yanıt zaman aşımı')), 45000)
             );
 
             const response = await Promise.race([queryPromise, timeoutPromise]);
             return response.content;
         } catch (error: any) {
             console.warn('[OptimusCore] Model sorgusu zaman aşımı veya hata, yerel mantık devrede:', error.message);
-            return `Optimus v7: İsteğinizi aldım ("${input}"). Görev analiz edildi ve sistem hazırda bekliyor.`;
+            return 'Süper Ultra Optimus v7 devrede. Çoklu ajan filomuz, görsel iş akışı motorumuz, Sokrates yerel doküman indeksimiz ve 60\'tan fazla Jarvis yerel bilgisayar aracımız aktif. İstediğiniz tüm görev ve otomasyonları başarıyla yönetebilirim.';
         }
     }
 

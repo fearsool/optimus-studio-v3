@@ -57,11 +57,11 @@ export default function OptimusStudio() {
   };
 
   // Speaks text using Jarvis Edge-TTS or browser SpeechSynthesis
+  // Speaks text using Jarvis natural Edge-TTS voice exclusively
   const speakReply = async (text: string) => {
     if (!text || typeof window === 'undefined') return;
     setAgentState(prev => ({ ...prev, status: 'speaking' }));
     
-    // Try Jarvis backend first
     try {
       const jarvisRes = await fetch('/api/jarvis/api/speak', {
         method: 'POST',
@@ -73,30 +73,16 @@ export default function OptimusStudio() {
         if (data.ok) {
           setTimeout(() => {
             setAgentState(prev => ({ ...prev, status: 'idle' }));
-          }, Math.min(Math.max(text.length * 60, 2000), 10000));
+          }, Math.min(Math.max(text.length * 60, 2000), 12000));
           return;
         }
       }
-    } catch {
-      // Jarvis offline, proceed to fallback
+    } catch (e) {
+      console.warn('[Optimus Voice] Jarvis Edge-TTS çevrimdışı:', e);
     }
 
-    // Fallback: Browser Web Speech API
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'tr-TR';
-      utterance.rate = 1.05;
-      utterance.onend = () => {
-        setAgentState(prev => ({ ...prev, status: 'idle' }));
-      };
-      utterance.onerror = () => {
-        setAgentState(prev => ({ ...prev, status: 'idle' }));
-      };
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setAgentState(prev => ({ ...prev, status: 'idle' }));
-    }
+    // Jarvis kapalıysa robotik tarayıcı sesini çalıştırma, sessizce idle yap
+    setAgentState(prev => ({ ...prev, status: 'idle' }));
   };
 
   const sendMessage = async (customText?: string) => {
