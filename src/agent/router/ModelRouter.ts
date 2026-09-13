@@ -511,7 +511,7 @@ export class ModelRouter {
 
     // ── 1. PRIMARY: OLLAMA HTTP (Local, private, ultra-fast) ───────────────
     try {
-      const preferredModel = options?.model || (task.includes('code') ? 'qwen2.5-coder:7b' : 'llama3:latest');
+      const preferredModel = options?.model || (task.includes('code') ? 'qwen2.5-coder:7b' : 'qwen2.5:3b');
       const content = await this.queryOllamaHttp(preferredModel, prompt);
       console.log(`[ModelRouter] ✅ Ollama HTTP responded successfully`);
       return { content };
@@ -549,7 +549,7 @@ export class ModelRouter {
     const ollamaUrl = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
     
     // Ordered candidate models present on user system
-    const candidates = [modelName, 'llama3:latest', 'qwen2.5:3b', 'gemma4:26b', 'qwen2.5-coder:7b', 'mistral:latest'];
+    const candidates = [modelName, 'qwen2.5:3b', 'qwen2.5-coder:7b', 'mistral:latest', 'llama3:latest', 'gemma4:26b'];
     const uniqueCandidates = Array.from(new Set(candidates));
 
     let lastError: any = null;
@@ -560,9 +560,9 @@ export class ModelRouter {
           messages: [
             {
               role: 'system',
-              content: 'Sen Süper Ultra Optimus v7 yapay zeka asistanısın. Kullanıcıya Türkçe, son derece akıcı, profesyonel, detaylı ve yapıcı yanıtlar verirsin. Çoklu ajan filosu, iş akışı motoru ve Jarvis 60+ yerel bilgisayar aracı senin kontrolündedir.'
+              content: 'Sen Süper Ultra Optimus v7 Türkçe yapay zeka asistanısın. KESİN KURAL: Yanıtların istisnasız %100 TÜRKÇE olmalıdır. Asla İngilizce veya başka dilde konuşma. Türkçe, son derece akıcı, profesyonel, detaylı ve yapıcı yanıtlar ver.'
             },
-            { role: 'user', content: prompt }
+            { role: 'user', content: `${prompt}\n\n(Lütfen sadece ve kesinlikle Türkçe yanıt ver.)` }
           ],
           stream: false
         }, {

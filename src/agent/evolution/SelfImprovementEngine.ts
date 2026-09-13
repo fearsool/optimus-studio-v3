@@ -261,7 +261,7 @@ export class SelfImprovementEngine {
             }));
 
             // Skill progress yükle
-            const skillRows = db.prepare('SELECT * FROM skill_progress WHERE status != "learned"').all();
+            const skillRows = db.prepare("SELECT * FROM skill_progress WHERE status != 'learned'").all();
             this.learningState.activeSkills = skillRows.map((row: any) => row.skill);
 
             db.close();

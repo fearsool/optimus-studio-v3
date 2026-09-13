@@ -27,6 +27,9 @@ const nextConfig = {
       'node_modules/sharp/**/*'
     ],
   },
+  turbopack: {
+    root: __dirname,
+  },
   experimental: {
   }
 };

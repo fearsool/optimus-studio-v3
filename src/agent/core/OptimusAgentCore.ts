@@ -302,7 +302,70 @@ export class OptimusAgentCore {
             return `Şu an saat ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}.`;
         }
 
-        // 2. ModelRouter Sorgusu (Ollama Yerel Yapay Zeka - 45 saniye zaman aşımı)
+        // 2. YouTube & Müzik Anında Başlatıcı (<200ms)
+        if (cleaned.includes('youtube') || (cleaned.includes('şarkı') && (cleaned.includes('aç') || cleaned.includes('çal') || cleaned.includes('oynat'))) || (cleaned.includes('müzik') && (cleaned.includes('aç') || cleaned.includes('çal'))) || cleaned.includes('video') || cleaned.includes('izle')) {
+            // Smarter extraction: remove command filler words, keep artist/song
+            const fillerWords = [
+                "youtube'dan", "youtube'da", "youtubedan", "youtubeda", "youtube",
+                "şarkısını", "şarkısı", "şarkı", "müziğini", "müziği", "müzik",
+                "klibini", "klip", "videoyu", "video",
+                "herhangi bir", "bana", "beni", "sana", "bize", "lütfen",
+                "aç", "çal", "oynat", "başlat", "dinle", "izle", "bul", "getir",
+                "dan", "da", "den", "de"
+            ];
+            let searchQuery = input;
+            for (const word of fillerWords) {
+                const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                searchQuery = searchQuery.replace(new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, 'gi'), ' ');
+            }
+            searchQuery = searchQuery.replace(/\s+/g, ' ').trim();
+
+            if (!searchQuery || searchQuery.length < 2) searchQuery = 'Yıldız Tilbe';
+
+            try {
+                const { exec } = require('child_process');
+                const targetUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+                exec(`start "" "${targetUrl}"`);
+                console.log(`[OptimusCore] YouTube açıldı: ${targetUrl}`);
+            } catch (e) {
+                console.error('[OptimusCore] YouTube açma hatası:', e);
+            }
+
+            return `YouTube üzerinde "${searchQuery}" aranıyor ve açılıyor...`;
+        }
+
+        // 3. Spotify Anında Kontrol
+        if (cleaned.includes('spotify')) {
+            const { exec } = require('child_process');
+            if (cleaned.includes('durdur') || cleaned.includes('duraklat')) {
+                exec(`powershell -c "$w=New-Object -ComObject WScript.Shell; $w.SendKeys([char]179)"`);
+                return 'Spotify müziği duraklatıldı.';
+            }
+            if (cleaned.includes('sonraki') || cleaned.includes('geç')) {
+                exec(`powershell -c "$w=New-Object -ComObject WScript.Shell; $w.SendKeys([char]176)"`);
+                return 'Sonraki parçaya geçildi.';
+            }
+            let query = input.replace(/spotify('da|'dan|da|dan)?/gi, '').replace(/aç/gi, '').replace(/çal/gi, '').trim();
+            exec(`start spotify:search:${encodeURIComponent(query || 'Yıldız Tilbe')}`);
+            return `Spotify üzerinde "${query || 'müzik'}" başlatılıyor...`;
+        }
+
+        // 4. Sistem Ses Kontrolü
+        if (cleaned.includes('sesi') && (cleaned.includes('kapat') || cleaned.includes('kıs') || cleaned.includes('sustur') || cleaned.includes('aç') || cleaned.includes('yükselt'))) {
+            const { exec } = require('child_process');
+            if (cleaned.includes('kapat') || cleaned.includes('sustur')) {
+                exec(`powershell -c "$w=New-Object -ComObject WScript.Shell; $w.SendKeys([char]173)"`);
+                return 'Sistem sesi kapatıldı (sessize alındı).';
+            } else if (cleaned.includes('yükselt') || cleaned.includes('aç')) {
+                exec(`powershell -c "$w=New-Object -ComObject WScript.Shell; 1..5 | ForEach-Object { $w.SendKeys([char]175) }"`);
+                return 'Sistem sesi yükseltildi.';
+            } else {
+                exec(`powershell -c "$w=New-Object -ComObject WScript.Shell; 1..5 | ForEach-Object { $w.SendKeys([char]174) }"`);
+                return 'Sistem sesi kısıldı.';
+            }
+        }
+
+        // 5. ModelRouter Sorgusu (Ollama Yerel Yapay Zeka - 45 saniye zaman aşımı)
         try {
             const queryPromise = this.modelRouter.query('chat_turkish', input);
             const timeoutPromise = new Promise<{ content: string }>((_, reject) =>

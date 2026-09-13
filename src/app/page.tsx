@@ -95,39 +95,19 @@ export default function OptimusStudio() {
     setAgentState(prev => ({ ...prev, status: 'thinking' }));
 
     try {
-      // First check if it's a direct PC control command for Jarvis
-      let responseText = '';
-      try {
-        const jarvisCommandRes = await fetch('/api/jarvis/api/command', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: textToSend })
-        });
-        if (jarvisCommandRes.ok) {
-          const jarvisData = await jarvisCommandRes.json();
-          if (jarvisData.reply) {
-            responseText = jarvisData.reply;
-          }
-        }
-      } catch {
-        // Jarvis offline
-      }
-
-      // If Jarvis didn't respond directly, route through Optimus Agent
-      if (!responseText) {
-        const res = await fetch('/api/agent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: textToSend, history: messages })
-        });
-        const data = await res.json();
-        responseText = data.response || 'Anlaşıldı komutanım.';
-        if (data.plan) setAgentState(prev => ({ ...prev, currentPlan: data.plan }));
-      }
+      // Primary: Route through Optimus Core (Instant Tools & Local Ollama)
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: textToSend, history: messages })
+      });
+      const data = await res.json();
+      const responseText = data.response || 'Anlaşıldı komutanım.';
+      if (data.plan) setAgentState(prev => ({ ...prev, currentPlan: data.plan }));
 
       setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: responseText, timestamp: new Date() }]);
       
-      // Voice reply trigger
+      // Voice reply trigger: Speak using Jarvis Edge-TTS natural voice
       await speakReply(responseText);
 
     } catch (e) {

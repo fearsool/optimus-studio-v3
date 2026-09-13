@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OptimusAgentCore } from '@/agent/core/OptimusAgentCore';
 
 // Singleton instance for the agent (simple approach for dev)
-let globalAgent: OptimusAgentCore | null = null;
-
 function getAgent() {
-    if (!globalAgent) {
-        globalAgent = new OptimusAgentCore();
-    }
-    return globalAgent;
+    return new OptimusAgentCore();
 }
 
 export async function POST(req: NextRequest) {
